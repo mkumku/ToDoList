@@ -20,8 +20,8 @@ A lightweight task manager with both a CLI tool and a web UI, built for tracking
 ### 1. Clone and setup
 
 ```bash
-git clone https://github.com/mkumku/td-todo.git
-cd td-todo
+git clone https://github.com/mkumku/ToDoList.git
+cd ToDoList
 cp data-example/*.json data/
 pip install -r requirements.txt
 ```
@@ -38,7 +38,7 @@ Open http://localhost:5000 in your browser.
 
 ```bash
 # Add to your shell profile:
-alias td='~/path/to/td-todo/td'
+alias td='~/path/to/ToDoList/td'
 
 # Then use:
 td                    # Today's work tasks
@@ -53,7 +53,7 @@ td help               # Full command reference
 ## File Structure
 
 ```
-td-todo/
+ToDoList/
 ├── td                  # CLI tool
 ├── td-web.py           # Web app (Flask)
 ├── templates/
