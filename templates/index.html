@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>To Do List</title>
+  <link rel="stylesheet" href="/static/td-web.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Task Manager</h1>
+      <nav>
+        <button class="tab active" data-view="todo">To Do</button>
+        <button class="tab" data-view="done">Done</button>
+        <button class="tab" data-view="categories">Categories</button>
+      </nav>
+    </header>
+
+    <div id="todo-view" class="view active">
+      <div class="toolbar">
+        <div class="filters">
+          <button class="filter-btn active" data-filter="work">Work</button>
+          <button class="filter-btn" data-filter="personal">Personal</button>
+          <button class="filter-btn" data-filter="all">All</button>
+        </div>
+        <select class="category-select" id="todo-category-filter">
+          <option value="">All Categories</option>
+        </select>
+        <button class="btn btn-export" id="export-todo-btn">Export CSV</button>
+        <button class="btn btn-export" id="copy-todo-keep">Copy for Keep</button>
+      </div>
+
+      <div id="add-todo-form" class="add-form">
+        <div class="form-row">
+          <label class="personal-label"><input type="checkbox" id="new-todo-personal"> Personal</label>
+          <select id="new-todo-category-select" class="category-select">
+            <option value="">Category...</option>
+          </select>
+          <input type="text" id="new-todo-category-custom" placeholder="New category" class="hidden">
+          <input type="text" id="new-todo-task" placeholder="Task description" class="wide">
+          <input type="date" id="new-todo-due">
+          <select id="new-todo-type">
+            <option value="">Type</option>
+            <option value="quick">Quick</option>
+            <option value="deep">Deep</option>
+            <option value="meeting">Meeting</option>
+          </select>
+          <input type="text" id="new-todo-notes" placeholder="Notes">
+          <button class="btn btn-save" id="save-todo-btn">Add Task</button>
+        </div>
+      </div>
+
+      <div id="bulk-actions" class="add-form hidden">
+        <div class="form-row">
+          <span id="bulk-count">0 selected</span>
+          <input type="date" id="bulk-move-date">
+          <button class="btn btn-save" id="bulk-move-btn">Move Selected</button>
+          <button class="btn btn-cancel" id="bulk-clear-btn">Clear Selection</button>
+        </div>
+      </div>
+
+      <div id="todo-groups"></div>
+    </div>
+
+    <div id="done-view" class="view">
+      <div class="toolbar">
+        <div class="filters">
+          <button class="filter-btn active" data-filter="today">Today</button>
+          <button class="filter-btn" data-filter="week">This Week</button>
+          <button class="filter-btn" data-filter="all">All</button>
+        </div>
+        <div class="filters">
+          <button class="filter-btn" data-filter="work">Work</button>
+          <button class="filter-btn" data-filter="personal">Personal</button>
+        </div>
+        <select class="category-select" id="done-category-filter">
+          <option value="">All Categories</option>
+        </select>
+        <button class="btn btn-export" id="export-done-btn">Export CSV</button>
+        <button class="btn btn-export" id="copy-done-keep">Copy for Keep</button>
+      </div>
+
+      <div id="add-done-form" class="add-form">
+        <div class="form-row">
+          <label class="personal-label"><input type="checkbox" id="new-done-personal"> Personal</label>
+          <select id="new-done-category-select" class="category-select">
+            <option value="">Category...</option>
+          </select>
+          <input type="text" id="new-done-category-custom" placeholder="New category" class="hidden">
+          <input type="text" id="new-done-task" placeholder="Task description" class="wide">
+          <input type="date" id="new-done-date">
+          <input type="text" id="new-done-feeling" placeholder="Feeling">
+          <button class="btn btn-save" id="save-done-btn">Log Done</button>
+        </div>
+      </div>
+
+      <div id="done-list"></div>
+    </div>
+
+    <div id="categories-view" class="view">
+      <div class="toolbar">
+        <h2 style="font-size:16px;">Manage Categories</h2>
+        <div class="filters">
+          <button class="filter-btn active" data-filter="work" id="cat-filter-work">Work</button>
+          <button class="filter-btn" data-filter="personal" id="cat-filter-personal">Personal</button>
+          <button class="filter-btn" data-filter="all" id="cat-filter-all">All</button>
+        </div>
+      </div>
+      <div class="add-form">
+        <div class="form-row">
+          <label class="personal-label"><input type="checkbox" id="new-category-personal"> Personal</label>
+          <input type="text" id="new-category-name" placeholder="New category name">
+          <button class="btn btn-save" id="add-category-btn">Add</button>
+        </div>
+      </div>
+      <div id="categories-list"></div>
+    </div>
+  </div>
+
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal">
+      <p id="modal-message"></p>
+      <div id="modal-input-wrap" class="hidden">
+        <input type="text" id="modal-input" placeholder="">
+      </div>
+      <div class="modal-buttons">
+        <button class="btn btn-save" id="modal-confirm">Confirm</button>
+        <button class="btn btn-cancel" id="modal-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/td-web.js"></script>
+</body>
+</html>

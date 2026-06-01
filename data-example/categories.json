@@ -1,0 +1,7 @@
+{
+  "categories": [
+    {"name": "Other", "personal": false},
+    {"name": "Personal", "personal": true},
+    {"name": "Work", "personal": false}
+  ]
+}
