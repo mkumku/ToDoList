@@ -184,10 +184,18 @@ function refreshAddCategoryDropdowns() {
   populateAddCategoryDropdown('new-done-category-select', 'new-done-category-custom', donePersonal);
 }
 
-function getSelectedCategory(selectId, customInputId) {
+async function getSelectedCategory(selectId, customInputId, personal) {
   const sel = document.getElementById(selectId);
   const custom = document.getElementById(customInputId);
-  if (sel.value === '__new__') return custom.value.trim() || 'Other';
+  if (sel.value === '__new__') {
+    const name = custom.value.trim() || 'Other';
+    if (name !== 'Other' && !masterCategories.some(c => c.name === name)) {
+      await api('/api/categories', 'POST', { name, personal: !!personal });
+      masterCategories = await api('/api/categories');
+      refreshAddCategoryDropdowns();
+    }
+    return name;
+  }
   return sel.value || 'Other';
 }
 
@@ -231,10 +239,10 @@ function makeEditable(td, taskId, field, listType) {
   });
 }
 
-function makeTypeSelect(td, task) {
+function makeTypeSelect(td, task, listType) {
   const sel = document.createElement('select');
   sel.className = 'cell-select';
-  ['', 'quick', 'deep', 'meeting'].forEach(v => {
+  ['quick', 'deep', 'meeting', 'errands'].forEach(v => {
     const opt = document.createElement('option');
     opt.value = v;
     opt.textContent = v || '—';
@@ -242,8 +250,10 @@ function makeTypeSelect(td, task) {
     sel.appendChild(opt);
   });
   sel.addEventListener('change', async function () {
-    await api(`/api/todo/${task.id}`, 'PUT', { type: this.value });
-    await loadTodo();
+    const url = listType === 'done' ? `/api/done/${task.id}` : `/api/todo/${task.id}`;
+    await api(url, 'PUT', { type: this.value });
+    if (listType === 'done') await loadDone();
+    else await loadTodo();
   });
   td.appendChild(sel);
 }
@@ -291,6 +301,33 @@ function renderTodo() {
   };
 
   Object.values(groups).forEach(g => g.sort(sortKey));
+
+  const banner = document.getElementById('overdue-banner');
+  const overdueCount = groups.overdue.length;
+  if (overdueCount > 0) {
+    const nextMon = new Date();
+    const dow = nextMon.getDay();
+    const daysUntilMon = dow === 0 ? 1 : dow === 1 ? 7 : 8 - dow;
+    nextMon.setDate(nextMon.getDate() + daysUntilMon);
+    const monIso = nextMon.toISOString().slice(0, 10);
+
+    banner.innerHTML = '';
+    const msg = document.createElement('span');
+    msg.textContent = `${overdueCount} overdue task${overdueCount > 1 ? 's' : ''} — Move all to next Monday?`;
+    const btn = document.createElement('button');
+    btn.textContent = 'Move';
+    btn.addEventListener('click', async () => {
+      for (const t of groups.overdue) {
+        await api(`/api/todo/${t.id}`, 'PUT', { due: `Mon ${monIso}` });
+      }
+      await loadTodo();
+    });
+    banner.appendChild(msg);
+    banner.appendChild(btn);
+    banner.classList.remove('hidden');
+  } else {
+    banner.classList.add('hidden');
+  }
 
   const labels = { priority: 'Top Priority', overdue: 'Overdue', today: 'Due Today', week: 'This Week', later: 'Later' };
   let totalShown = 0;
@@ -342,7 +379,7 @@ function renderTodo() {
       tr.appendChild(tdTask);
 
       const tdType = document.createElement('td');
-      makeTypeSelect(tdType, task);
+      makeTypeSelect(tdType, task, 'todo');
       tr.appendChild(tdType);
 
       const tdDue = document.createElement('td');
@@ -363,8 +400,31 @@ function renderTodo() {
       tr.appendChild(tdDue);
 
       const tdNotes = document.createElement('td');
-      tdNotes.textContent = task.notes || '';
-      makeEditable(tdNotes, task.id, 'notes', 'todo');
+      const noteVal = task.notes || '';
+      if (noteVal && /^https?:\/\/\S+$/i.test(noteVal)) {
+        tdNotes.className = 'note-link';
+        const link = document.createElement('a');
+        link.href = noteVal;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = noteVal;
+        tdNotes.appendChild(link);
+        tdNotes.addEventListener('dblclick', function () {
+          this.textContent = noteVal;
+          this.setAttribute('contenteditable', 'true');
+          this.focus();
+          const onBlur = async () => {
+            this.removeEventListener('blur', onBlur);
+            const newValue = this.textContent.trim();
+            await api(`/api/todo/${task.id}`, 'PUT', { notes: newValue });
+            await loadTodo();
+          };
+          this.addEventListener('blur', onBlur);
+        });
+      } else {
+        tdNotes.textContent = noteVal;
+        makeEditable(tdNotes, task.id, 'notes', 'todo');
+      }
       tr.appendChild(tdNotes);
 
       const tdPersonal = document.createElement('td');
@@ -396,11 +456,11 @@ function renderTodo() {
       doneBtn.className = 'btn btn-done';
       doneBtn.textContent = 'Done';
       doneBtn.addEventListener('click', async () => {
-        const feeling = await showModal(`Mark "${task.task}" as done?`, {
+        const reflection = await showModal(`Mark "${task.task}" as done?`, {
           input: true, inputPlaceholder: 'How did it feel? (optional)'
         });
-        if (feeling !== null) {
-          await api(`/api/todo/${task.id}/done`, 'POST', { feeling: feeling || '' });
+        if (reflection !== null) {
+          await api(`/api/todo/${task.id}/done`, 'POST', { reflection: reflection || '' });
           await loadTodo();
           await loadDone();
         }
@@ -445,9 +505,9 @@ function renderTodo() {
 
 function renderDoneTable(container, tasks, showDate) {
   const table = document.createElement('table');
-  let headerHtml = '<thead><tr><th>Category</th><th>Task</th>';
+  let headerHtml = '<thead><tr><th>Category</th><th>Task</th><th>Type</th>';
   if (showDate) headerHtml += '<th>Date</th>';
-  headerHtml += '<th>Feeling</th><th title="Personal">P</th><th>Actions</th></tr></thead>';
+  headerHtml += '<th>Reflection</th><th class="done-notes-th">Notes</th><th title="Personal">P</th><th>Actions</th></tr></thead>';
   table.innerHTML = headerHtml;
   const tbody = document.createElement('tbody');
 
@@ -461,9 +521,15 @@ function renderDoneTable(container, tasks, showDate) {
     tr.appendChild(tdCat);
 
     const tdTask = document.createElement('td');
+    tdTask.className = 'done-task-col';
     tdTask.textContent = task.task || '';
     makeEditable(tdTask, task.id, 'task', 'done');
     tr.appendChild(tdTask);
+
+    const tdType = document.createElement('td');
+    tdType.className = 'done-type-col';
+    makeTypeSelect(tdType, task, 'done');
+    tr.appendChild(tdType);
 
     if (showDate) {
       const tdDate = document.createElement('td');
@@ -475,10 +541,38 @@ function renderDoneTable(container, tasks, showDate) {
       tr.appendChild(tdDate);
     }
 
-    const tdFeeling = document.createElement('td');
-    tdFeeling.textContent = task.feeling || '';
-    makeEditable(tdFeeling, task.id, 'feeling', 'done');
-    tr.appendChild(tdFeeling);
+    const tdReflection = document.createElement('td');
+    tdReflection.textContent = task.reflection || '';
+    makeEditable(tdReflection, task.id, 'reflection', 'done');
+    tr.appendChild(tdReflection);
+
+    const tdNotes = document.createElement('td');
+    const noteVal = task.notes || '';
+    tdNotes.className = (noteVal && /^https?:\/\/\S+$/i.test(noteVal)) ? 'done-notes-col note-link' : 'done-notes-col';
+    if (noteVal && /^https?:\/\/\S+$/i.test(noteVal)) {
+      const link = document.createElement('a');
+      link.href = noteVal;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.textContent = noteVal;
+      tdNotes.appendChild(link);
+      tdNotes.addEventListener('dblclick', function () {
+        this.textContent = noteVal;
+        this.setAttribute('contenteditable', 'true');
+        this.focus();
+        const onBlur = async () => {
+          this.removeEventListener('blur', onBlur);
+          const newValue = this.textContent.trim();
+          await api(`/api/done/${task.id}`, 'PUT', { notes: newValue });
+          await loadDone();
+        };
+        this.addEventListener('blur', onBlur);
+      });
+    } else {
+      tdNotes.textContent = noteVal;
+      makeEditable(tdNotes, task.id, 'notes', 'done');
+    }
+    tr.appendChild(tdNotes);
 
     const tdPersonal = document.createElement('td');
     const personalCheck = document.createElement('input');
@@ -697,12 +791,12 @@ document.getElementById('new-done-personal').addEventListener('change', function
 
 // Add Todo
 document.getElementById('save-todo-btn').addEventListener('click', async () => {
-  const category = getSelectedCategory('new-todo-category-select', 'new-todo-category-custom');
+  const personal = document.getElementById('new-todo-personal').checked;
+  const category = await getSelectedCategory('new-todo-category-select', 'new-todo-category-custom', personal);
   const task = document.getElementById('new-todo-task').value.trim();
   const due = document.getElementById('new-todo-due').value.trim();
   const type = document.getElementById('new-todo-type').value;
   const notes = document.getElementById('new-todo-notes').value.trim();
-  const personal = document.getElementById('new-todo-personal').checked;
 
   if (!task) return;
 
@@ -716,8 +810,6 @@ document.getElementById('save-todo-btn').addEventListener('click', async () => {
 
   resetCategorySelect('new-todo-category-select', 'new-todo-category-custom');
   document.getElementById('new-todo-task').value = '';
-  document.getElementById('new-todo-due').value = '';
-  document.getElementById('new-todo-type').value = '';
   document.getElementById('new-todo-notes').value = '';
   document.getElementById('new-todo-personal').checked = false;
   document.getElementById('new-todo-due').value = today();
@@ -726,16 +818,18 @@ document.getElementById('save-todo-btn').addEventListener('click', async () => {
 
 // Add Done
 document.getElementById('save-done-btn').addEventListener('click', async () => {
-  const category = getSelectedCategory('new-done-category-select', 'new-done-category-custom');
+  const personal = document.getElementById('new-done-personal').checked;
+  const category = await getSelectedCategory('new-done-category-select', 'new-done-category-custom', personal);
   const task = document.getElementById('new-done-task').value.trim();
   const dateVal = document.getElementById('new-done-date').value;
-  const feeling = document.getElementById('new-done-feeling').value.trim();
-  const personal = document.getElementById('new-done-personal').checked;
+  const type = document.getElementById('new-done-type').value;
+  const reflection = document.getElementById('new-done-reflection').value.trim();
 
   if (!task) return;
 
   const newTask = { category, task, personal };
-  if (feeling) newTask.feeling = feeling;
+  if (type) newTask.type = type;
+  if (reflection) newTask.reflection = reflection;
   if (dateVal) {
     const dt = new Date(dateVal + 'T00:00:00');
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -750,7 +844,8 @@ document.getElementById('save-done-btn').addEventListener('click', async () => {
   resetCategorySelect('new-done-category-select', 'new-done-category-custom');
   document.getElementById('new-done-task').value = '';
   document.getElementById('new-done-date').value = '';
-  document.getElementById('new-done-feeling').value = '';
+  document.getElementById('new-done-reflection').value = '';
+  document.getElementById('new-done-type').value = 'meeting';
   document.getElementById('new-done-personal').checked = false;
   document.getElementById('new-done-date').value = today();
 });
@@ -763,10 +858,9 @@ document.getElementById('bulk-move-btn').addEventListener('click', async () => {
   const dt = new Date(dateVal + 'T00:00:00');
   const newDue = dayNames[dt.getDay()] + ' ' + dateVal;
 
-  const promises = [...selectedTodoIds].map(id =>
-    api(`/api/todo/${id}`, 'PUT', { due: newDue })
-  );
-  await Promise.all(promises);
+  for (const id of selectedTodoIds) {
+    await api(`/api/todo/${id}`, 'PUT', { due: newDue });
+  }
   selectedTodoIds.clear();
   updateBulkBar();
   await loadTodo();
@@ -797,9 +891,9 @@ function exportTodoCsv() {
 }
 
 function exportDoneCsv() {
-  const headers = ['Category', 'Task', 'Date', 'Day', 'Feeling'];
+  const headers = ['Day', 'Task', 'Category', 'Note', 'Reflection', 'Date'];
   const rows = lastRenderedDone.map(t => [
-    t.category || '', t.task || '', t.date || '', t.weekDay || '', t.feeling || ''
+    t.weekDay || '', t.task || '', t.category || '', t.notes || '', t.reflection || '', t.date || ''
   ]);
   const csv = [headers, ...rows].map(r => r.map(escapeCsv).join(',')).join('\n');
   downloadCsv(csv, 'done.csv');
@@ -834,7 +928,7 @@ function copyToKeepTodo() {
 function copyToKeepDone() {
   const lines = lastRenderedDone.map(t => {
     const cat = t.category ? `[${t.category}] ` : '';
-    const feel = t.feeling ? ` — ${t.feeling}` : '';
+    const feel = t.reflection ? ` — ${t.reflection}` : '';
     return `${cat}${t.task}${feel}`;
   });
   navigator.clipboard.writeText(lines.join('\n')).then(() => {

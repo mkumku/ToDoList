@@ -106,12 +106,14 @@ def mark_done(task_id):
     }
     if task.get("due"):
         entry["due"] = task["due"]
+    if task.get("type"):
+        entry["type"] = task["type"]
     entry["completedOn"] = today.isoformat()
     entry["date"] = today.isoformat()
     entry["weekDay"] = DAY_NAMES[today.weekday()]
     entry["personal"] = task.get("personal", False) or task.get("category", "").lower() == "personal"
-    if body.get("feeling"):
-        entry["feeling"] = body["feeling"]
+    if body.get("reflection"):
+        entry["reflection"] = body["reflection"]
 
     done_data["tasks"].append(entry)
     save_json(TODO_FILE, todo_data)

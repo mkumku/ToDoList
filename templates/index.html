@@ -41,10 +41,10 @@
           <input type="text" id="new-todo-task" placeholder="Task description" class="wide">
           <input type="date" id="new-todo-due">
           <select id="new-todo-type">
-            <option value="">Type</option>
             <option value="quick">Quick</option>
             <option value="deep">Deep</option>
             <option value="meeting">Meeting</option>
+            <option value="errands">Errands</option>
           </select>
           <input type="text" id="new-todo-notes" placeholder="Notes">
           <button class="btn btn-save" id="save-todo-btn">Add Task</button>
@@ -60,6 +60,7 @@
         </div>
       </div>
 
+      <div id="overdue-banner" class="overdue-banner hidden"></div>
       <div id="todo-groups"></div>
     </div>
 
@@ -90,7 +91,13 @@
           <input type="text" id="new-done-category-custom" placeholder="New category" class="hidden">
           <input type="text" id="new-done-task" placeholder="Task description" class="wide">
           <input type="date" id="new-done-date">
-          <input type="text" id="new-done-feeling" placeholder="Feeling">
+          <select id="new-done-type">
+            <option value="quick">Quick</option>
+            <option value="deep">Deep</option>
+            <option value="meeting" selected>Meeting</option>
+            <option value="errands">Errands</option>
+          </select>
+          <input type="text" id="new-done-reflection" placeholder="Reflection">
           <button class="btn btn-save" id="save-done-btn">Log Done</button>
         </div>
       </div>

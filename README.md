@@ -1,6 +1,6 @@
 # td — Personal Task Manager
 
-A lightweight task manager with both a CLI tool and a web UI, built for tracking work and personal tasks with feelings/reflections.
+A lightweight task manager with both a CLI tool and a web UI, built for tracking work and personal tasks with reflections.
 
 ## Features
 
@@ -11,7 +11,7 @@ A lightweight task manager with both a CLI tool and a web UI, built for tracking
 - **Work/Personal separation** — filter and toggle, with subtle visual distinction
 - **Categories** — customizable, managed via UI
 - **Task types** — Quick, Deep, Meeting
-- **Feelings tracking** — log how tasks felt when completed
+- **Reflections tracking** — log reflections on tasks when completed
 - **CSV export** — export filtered views to spreadsheet
 - **Bulk operations** — select multiple tasks and move due dates
 

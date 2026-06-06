@@ -9,7 +9,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 TODO_FILE = os.path.join(DATA_DIR, "todo.json")
 DONE_FILE = os.path.join(DATA_DIR, "done.json")
-FEELINGS_FILE = os.path.join(DATA_DIR, "feelings.txt")
+REFLECTIONS_FILE = os.path.join(DATA_DIR, "reflections.txt")
 
 DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 DAY_ABBREV = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -117,18 +117,22 @@ def resolve_date(text):
         date_str += " EOD"
     return date_str
 
-WORK_TYPES = ["quick", "deep", "meeting"]
-WORK_TYPE_ABBREV = {"q": "quick", "d": "deep", "m": "meeting"}
+WORK_TYPES = ["quick", "deep", "meeting", "errands"]
+WORK_TYPE_ABBREV = {"q": "quick", "d": "deep", "m": "meeting", "e": "errands"}
 
 AUTO_QUICK = ["invite", "ask ", "follow up", "ping", "reply", "forward", "send", "share", "check with", "give"]
 AUTO_MEETING = ["meeting", "sync", "standup", "retro", "call", "session"]
 AUTO_DEEP = ["review", "research", "understand", "learn", "create", "build", "write", "prepare", "prep", "implement", "start"]
+AUTO_ERRANDS = ["errand", "pick up", "drop off", "buy", "return", "mail", "deliver", "pickup", "grab"]
 
 def detect_work_type(task_text):
     lower = task_text.lower()
     for kw in AUTO_MEETING:
         if kw in lower:
             return "meeting"
+    for kw in AUTO_ERRANDS:
+        if kw in lower:
+            return "errands"
     for kw in AUTO_QUICK:
         if kw in lower:
             return "quick"
@@ -301,24 +305,24 @@ def print_done_table(tasks, label=None, show_date=False):
         print(f"\n### {label}")
     if show_date:
         print(f"|     |                  |                                               |            |                           |")
-        print(f"| {'#':>3} | {'Category':<16} | {'Task':<45} | {'Date':<10} | {'Feeling':<25} |")
+        print(f"| {'#':>3} | {'Category':<16} | {'Task':<45} | {'Date':<10} | {'Reflection':<25} |")
         print(f"|-----|------------------|-----------------------------------------------|------------|---------------------------|")
     else:
         print(f"|     |                  |                                               |                           |")
-        print(f"| {'#':>3} | {'Category':<16} | {'Task':<45} | {'Feeling':<25} |")
+        print(f"| {'#':>3} | {'Category':<16} | {'Task':<45} | {'Reflection':<25} |")
         print(f"|-----|------------------|-----------------------------------------------|---------------------------|")
     for task in tasks:
         tid = task["id"]
         cat = task.get("category", "")
         desc = task.get("task", "")
-        feeling = task.get("feeling", "")
+        reflection = task.get("reflection", "")
         if show_date:
             date_str = short_date_done(task)
             print(f"|     |                  |                                               |            |                           |")
-            print(f"| {tid:>3} | {cat:<16} | {desc:<45} | {date_str:<10} | {feeling:<25} |")
+            print(f"| {tid:>3} | {cat:<16} | {desc:<45} | {date_str:<10} | {reflection:<25} |")
         else:
             print(f"|     |                  |                                               |                           |")
-            print(f"| {tid:>3} | {cat:<16} | {desc:<45} | {feeling:<25} |")
+            print(f"| {tid:>3} | {cat:<16} | {desc:<45} | {reflection:<25} |")
 
 def display_done(tasks, title=None, show_date=False):
     if not tasks:
@@ -634,11 +638,11 @@ def cmd_add(args):
 def cmd_did(args):
     raw = " ".join(args)
 
-    feeling = None
+    reflection = None
     if " -f " in raw:
         parts = raw.split(" -f ", 1)
         raw = parts[0].strip()
-        feeling = parts[1].strip().strip('"').strip("'")
+        reflection = parts[1].strip().strip('"').strip("'")
 
     raw = raw.strip().strip('"').strip("'")
 
@@ -646,15 +650,15 @@ def cmd_did(args):
     first_token = raw.split(",")[0].split()[0] if raw else ""
     try:
         task_id = int(first_token)
-        # Extract feeling from remainder: "13, easy" or "13 easy"
+        # Extract reflection from remainder: "13, easy" or "13 easy"
         remainder = raw[len(first_token):].lstrip(",").strip()
-        if remainder and not feeling:
-            feeling = remainder
-        _finish_task(task_id, feeling)
+        if remainder and not reflection:
+            reflection = remainder
+        _finish_task(task_id, reflection)
     except ValueError:
-        _log_done(raw, feeling)
+        _log_done(raw, reflection)
 
-def _finish_task(task_id, feeling):
+def _finish_task(task_id, reflection):
     todo_data = load_json(TODO_FILE)
     done_data = load_json(DONE_FILE)
 
@@ -680,15 +684,15 @@ def _finish_task(task_id, feeling):
     entry["date"] = t.isoformat()
     entry["weekDay"] = DAY_NAMES[t.weekday()]
     entry["personal"] = is_personal(task)
-    if feeling:
-        entry["feeling"] = feeling
+    if reflection:
+        entry["reflection"] = reflection
 
     done_data["tasks"].append(entry)
     save_json(TODO_FILE, todo_data)
     save_json(DONE_FILE, done_data)
     print(f"Done #{task_id}: \"{task.get('task', '')}\" ({task.get('category', '')})")
 
-FEELING_KEYWORDS_DEFAULT = ["hard", "painful", "annoying", "easy", "ok", "interesting",
+REFLECTION_KEYWORDS_DEFAULT = ["hard", "painful", "annoying", "easy", "ok", "interesting",
                      "fun", "pleasant", "boring", "challenging", "great", "nice",
                      "good", "bad", "stressful", "relaxing", "effortless", "quick",
                      "short", "amazing", "terrible", "awful", "fine", "meh",
@@ -696,30 +700,30 @@ FEELING_KEYWORDS_DEFAULT = ["hard", "painful", "annoying", "easy", "ok", "intere
                      "satisfying", "rewarding", "frustrating", "confusing",
                      "exciting", "dull", "tedious", "smooth", "productive"]
 
-def load_feelings():
-    words = list(FEELING_KEYWORDS_DEFAULT)
-    if os.path.exists(FEELINGS_FILE):
-        with open(FEELINGS_FILE, "r") as f:
+def load_reflections():
+    words = list(REFLECTION_KEYWORDS_DEFAULT)
+    if os.path.exists(REFLECTIONS_FILE):
+        with open(REFLECTIONS_FILE, "r") as f:
             for line in f:
                 w = line.strip().lower()
                 if w and w not in words:
                     words.append(w)
     return words
 
-FEELING_KEYWORDS = load_feelings()
+REFLECTION_KEYWORDS = load_reflections()
 
-def _split_feeling(task_text):
+def _split_reflection(task_text):
     if "," not in task_text:
         return task_text, None
     last_comma = task_text.rfind(",")
     candidate = task_text[last_comma + 1:].strip()
     if len(candidate) < 30 and len(candidate.split()) < 6:
         first_word = candidate.split()[0].lower().rstrip("!.,") if candidate else ""
-        if first_word in FEELING_KEYWORDS or any(kw in candidate.lower() for kw in FEELING_KEYWORDS):
+        if first_word in REFLECTION_KEYWORDS or any(kw in candidate.lower() for kw in REFLECTION_KEYWORDS):
             return task_text[:last_comma].strip(), candidate
     return task_text, None
 
-def _log_done(raw, feeling):
+def _log_done(raw, reflection):
     if ":" in raw:
         category, task = raw.split(":", 1)
         category = category.strip()
@@ -731,8 +735,8 @@ def _log_done(raw, feeling):
     if category.lower() == "p":
         category = "Personal"
 
-    if not feeling:
-        task, feeling = _split_feeling(task)
+    if not reflection:
+        task, reflection = _split_reflection(task)
 
     done_data = load_json(DONE_FILE)
     t = today()
@@ -745,12 +749,12 @@ def _log_done(raw, feeling):
         "weekDay": DAY_NAMES[t.weekday()],
         "personal": category.lower() == "personal",
     }
-    if feeling:
-        entry["feeling"] = feeling
+    if reflection:
+        entry["reflection"] = reflection
 
     done_data["tasks"].append(entry)
     save_json(DONE_FILE, done_data)
-    feel_msg = f" ({feeling})" if feeling else ""
+    feel_msg = f" ({reflection})" if reflection else ""
     print(f"Logged done: \"{task}\" ({category}){feel_msg}")
 
 def cmd_mv(args):
@@ -902,8 +906,8 @@ def cmd_show(args):
                 print(f"  Due:       {task['due']}")
             if task.get("completedOn"):
                 print(f"  Completed: {task['completedOn']}")
-            if task.get("feeling"):
-                print(f"  Feeling:   {task['feeling']}")
+            if task.get("reflection"):
+                print(f"  Reflection:   {task['reflection']}")
             if task.get("notes"):
                 print(f"  Notes:     {task['notes']}")
             return
@@ -912,7 +916,7 @@ def cmd_show(args):
 
 def cmd_feel(args):
     if len(args) < 2:
-        print("Usage: td feel <done_id> <feeling>")
+        print("Usage: td reflect <done_id> <reflection>")
         return
 
     try:
@@ -921,33 +925,33 @@ def cmd_feel(args):
         print(f"Invalid task ID: {args[0]}")
         return
 
-    feeling = " ".join(args[1:]).strip('"').strip("'")
+    reflection = " ".join(args[1:]).strip('"').strip("'")
 
     data = load_json(DONE_FILE)
     for task in data["tasks"]:
         if task["id"] == task_id:
-            task["feeling"] = feeling
+            task["reflection"] = reflection
             save_json(DONE_FILE, data)
-            print(f"Updated #{task_id} feeling: \"{feeling}\"")
+            print(f"Updated #{task_id} reflection: \"{reflection}\"")
             return
 
     print(f"Task #{task_id} not found in done list.")
 
-def cmd_feelings(args):
+def cmd_reflections(args):
     if not args:
-        print("Current feeling keywords:")
-        print(", ".join(FEELING_KEYWORDS))
+        print("Current reflection keywords:")
+        print(", ".join(REFLECTION_KEYWORDS))
         return
 
     word = args[0].lower().strip()
-    if word in FEELING_KEYWORDS:
+    if word in REFLECTION_KEYWORDS:
         print(f"\"{word}\" is already in the list.")
         return
 
-    with open(FEELINGS_FILE, "a") as f:
+    with open(REFLECTIONS_FILE, "a") as f:
         f.write(word + "\n")
-    FEELING_KEYWORDS.append(word)
-    print(f"Added \"{word}\" to feelings list.")
+    REFLECTION_KEYWORDS.append(word)
+    print(f"Added \"{word}\" to reflections list.")
 
 def cmd_rm(args):
     if not args:
@@ -1022,12 +1026,12 @@ ADD TO-DO:
   td add "oc-mirror: prep meeting" -d tomorrow -t deep
   td add "Personal: buy groceries" -d "May 20"
   td add "BU: standup" -d "Friday first" -t meeting
-  Type is auto-detected if not set. Values: quick (q), deep (d), meeting (m)
+  Type is auto-detected if not set. Values: quick (q), deep (d), meeting (m), errands (e)
   Type column: Q=quick, D=deep, M=meeting
 
 MARK DONE / LOG DONE:
   td did 5 -f "easy with AI"            Mark existing task #5 as done
-  td did 5                               Same, no feeling
+  td did 5                               Same, no reflection
   td did "Helm: release notes" -f "easy" Log new completed item
   td did "Personal: walk dog" -f "fun"   Personal items auto-detected
 
@@ -1049,8 +1053,8 @@ SHOW TASK DETAILS:
 ADD TO-DO WITH LINK:
   td add "Helm: review PR" -d Friday -l "https://github.com/..."
 
-ADD/UPDATE FEELING:
-  td feel 88 "fun"                       Add or update feeling on done item #88
+ADD/UPDATE REFLECTION:
+  td reflect 88 "fun"                    Add or update reflection on done item #88
   (or just use a comma: td did "Helm: fix thing, easy")
 
 ADD NOTES:
@@ -1099,10 +1103,10 @@ def main():
         cmd_note(args[1:])
     elif cmd == "show":
         cmd_show(args[1:])
-    elif cmd == "feel":
+    elif cmd in ("reflect", "feel"):
         cmd_feel(args[1:])
-    elif cmd == "feelings":
-        cmd_feelings(args[1:])
+    elif cmd == "reflections":
+        cmd_reflections(args[1:])
     elif cmd == "rm":
         cmd_rm(args[1:])
     elif cmd == "renum":

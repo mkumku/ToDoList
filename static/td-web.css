@@ -145,6 +145,32 @@ nav { display: flex; gap: 4px; }
 .group-header.overdue { color: #b45a5a; border-color: #e0b4b4; }
 .group-header.today { color: #2563eb; border-color: #93c5fd; }
 
+.overdue-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  margin: 10px 0;
+  background: #fef2f2;
+  border: 1px solid #e0b4b4;
+  border-radius: 6px;
+  color: #b45a5a;
+  font-size: 14px;
+  font-weight: 500;
+}
+.overdue-banner.hidden { display: none; }
+.overdue-banner button {
+  background: #b45a5a;
+  color: #fff;
+  border: none;
+  padding: 5px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+.overdue-banner button:hover { background: #943c3c; }
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -153,6 +179,20 @@ table {
   overflow: hidden;
   margin-bottom: 8px;
 }
+
+#todo-groups table {
+  table-layout: fixed;
+}
+#todo-groups th:nth-child(1) { width: 36px; }
+#todo-groups th:nth-child(2) { width: 12%; }
+#todo-groups th:nth-child(3) { width: 34%; }
+#todo-groups th:nth-child(4) { width: 70px; }
+#todo-groups th:nth-child(5) { width: 130px; }
+#todo-groups th:nth-child(6) { width: 16%; }
+#todo-groups th:nth-child(7) { width: 30px; }
+#todo-groups th:nth-child(8) { width: 130px; }
+#todo-groups td:nth-child(6) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#todo-groups td:nth-child(6):focus { white-space: normal; overflow: visible; }
 
 th {
   text-align: left;
@@ -170,6 +210,14 @@ td {
   border-bottom: 1px solid #f0f0f0;
   vertical-align: middle;
 }
+
+td.done-task-col { width: 40%; }
+td.done-type-col { min-width: 90px; }
+td.done-notes-col { max-width: 80px; font-size: 11px; color: #999; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+td.done-notes-col[contenteditable="true"] { white-space: normal; overflow: visible; }
+td.done-notes-col a { color: #2563eb; text-decoration: none; font-size: 11px; }
+td.done-notes-col a:hover { text-decoration: underline; }
+th.done-notes-th { font-size: 11px; width: 80px; }
 
 tr:hover { background: #f8fafc; }
 tr.personal-row { background: #faf5ff; }
@@ -207,6 +255,10 @@ td[contenteditable="true"]:hover {
   padding: 2px;
   width: 100%;
 }
+#todo-groups .cell-select { width: 55px; font-size: 11px; }
+td.note-link { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+td.note-link a { color: #2563eb; text-decoration: none; font-size: 12px; }
+td.note-link a:hover { text-decoration: underline; }
 
 .cell-select:focus {
   background: #eff6ff;
@@ -230,6 +282,7 @@ td[contenteditable="true"]:hover {
 .type-quick { background: #dcfce7; color: #166534; }
 .type-deep { background: #dbeafe; color: #1e40af; }
 .type-meeting { background: #fef3c7; color: #92400e; }
+.type-errands { background: #f3e8ff; color: #6b21a8; }
 
 .personal-badge {
   display: inline-block;
@@ -256,10 +309,10 @@ td[contenteditable="true"]:hover {
 .date-input {
   border: none;
   background: transparent;
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   padding: 2px;
-  width: 130px;
+  width: 120px;
 }
 
 .date-input:focus {
