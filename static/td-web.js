@@ -75,17 +75,23 @@ function showModal(message, options = {}) {
     const msg = document.getElementById('modal-message');
     const inputWrap = document.getElementById('modal-input-wrap');
     const input = document.getElementById('modal-input');
+    const dateWrap = document.getElementById('modal-date-wrap');
+    const dateInput = document.getElementById('modal-date');
     const confirm = document.getElementById('modal-confirm');
     const cancel = document.getElementById('modal-cancel');
 
     msg.textContent = message;
 
-    if (options.input) {
+    inputWrap.classList.add('hidden');
+    dateWrap.classList.add('hidden');
+
+    if (options.date) {
+      dateWrap.classList.remove('hidden');
+      dateInput.value = options.dateValue || '';
+    } else if (options.input) {
       inputWrap.classList.remove('hidden');
       input.placeholder = options.inputPlaceholder || '';
       input.value = options.inputValue || '';
-    } else {
-      inputWrap.classList.add('hidden');
     }
 
     overlay.classList.remove('hidden');
@@ -98,18 +104,20 @@ function showModal(message, options = {}) {
 
     function onConfirm() {
       cleanup();
-      resolve(options.input ? input.value : true);
+      resolve(options.date ? dateInput.value : options.input ? input.value : true);
     }
 
     function onCancel() {
       cleanup();
-      resolve(options.input ? null : false);
+      resolve(options.date ? null : options.input ? null : false);
     }
 
     confirm.addEventListener('click', onConfirm);
     cancel.addEventListener('click', onCancel);
 
-    if (options.input) {
+    if (options.date) {
+      dateInput.focus();
+    } else if (options.input) {
       input.focus();
       input.addEventListener('keydown', function handler(e) {
         if (e.key === 'Enter') { onConfirm(); input.removeEventListener('keydown', handler); }
@@ -313,12 +321,19 @@ function renderTodo() {
 
     banner.innerHTML = '';
     const msg = document.createElement('span');
-    msg.textContent = `${overdueCount} overdue task${overdueCount > 1 ? 's' : ''} — Move all to next Monday?`;
+    msg.textContent = `${overdueCount} overdue task${overdueCount > 1 ? 's' : ''}`;
     const btn = document.createElement('button');
-    btn.textContent = 'Move';
+    btn.textContent = 'Move all';
     btn.addEventListener('click', async () => {
+      const picked = await showModal(`Move ${overdueCount} overdue task${overdueCount > 1 ? 's' : ''} to:`, {
+        date: true, dateValue: monIso
+      });
+      if (!picked) return;
+      const dt = new Date(picked + 'T00:00:00');
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const newDue = dayNames[dt.getDay()] + ' ' + picked;
       for (const t of groups.overdue) {
-        await api(`/api/todo/${t.id}`, 'PUT', { due: `Mon ${monIso}` });
+        await api(`/api/todo/${t.id}`, 'PUT', { due: newDue });
       }
       await loadTodo();
     });
