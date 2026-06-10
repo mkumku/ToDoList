@@ -14,9 +14,15 @@ let lastRenderedDone = [];
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTH_ABBREV = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+function localIso(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function today() {
-  const d = new Date();
-  return d.toISOString().split('T')[0];
+  return localIso(new Date());
 }
 
 function parseDate(dueStr) {
@@ -51,7 +57,7 @@ function classifyTask(task) {
   const daysToFriday = (5 - dayOfWeek + 7) % 7;
   const endOfWeek = new Date(now);
   endOfWeek.setDate(now.getDate() + daysToFriday);
-  const endStr = endOfWeek.toISOString().split('T')[0];
+  const endStr = localIso(endOfWeek);
 
   if (d <= endStr) return 'week';
   return 'later';
@@ -317,7 +323,7 @@ function renderTodo() {
     const dow = nextMon.getDay();
     const daysUntilMon = dow === 0 ? 1 : dow === 1 ? 7 : 8 - dow;
     nextMon.setDate(nextMon.getDate() + daysUntilMon);
-    const monIso = nextMon.toISOString().slice(0, 10);
+    const monIso = localIso(nextMon);
 
     banner.innerHTML = '';
     const msg = document.createElement('span');
@@ -640,8 +646,8 @@ function renderDone() {
     monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
-    const startStr = monday.toISOString().split('T')[0];
-    const endStr = sunday.toISOString().split('T')[0];
+    const startStr = localIso(monday);
+    const endStr = localIso(sunday);
     filtered = filtered.filter(d => d.date >= startStr && d.date <= endStr);
   }
 
@@ -675,7 +681,7 @@ function renderDone() {
     monday.setDate(dt.getDate() - ((day + 6) % 7));
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
-    return monday.toISOString().split('T')[0] + '|' + sunday.toISOString().split('T')[0];
+    return localIso(monday) + '|' + localIso(sunday);
   }
 
   function formatWeekLabel(weekKey) {
@@ -688,13 +694,13 @@ function renderDone() {
     const tDay = tDate.getDay();
     const thisMon = new Date(tDate);
     thisMon.setDate(tDate.getDate() - ((tDay + 6) % 7));
-    const thisMonStr = thisMon.toISOString().split('T')[0];
+    const thisMonStr = localIso(thisMon);
     let prefix = '';
     if (monStr === thisMonStr) prefix = 'This Week: ';
     else {
       const lastMon = new Date(thisMon);
       lastMon.setDate(thisMon.getDate() - 7);
-      if (monStr === lastMon.toISOString().split('T')[0]) prefix = 'Last Week: ';
+      if (monStr === localIso(lastMon)) prefix = 'Last Week: ';
     }
     return `${prefix}${MONTH_ABBREV[mon.getMonth()]} ${mon.getDate()} - ${MONTH_ABBREV[sun.getMonth()]} ${sun.getDate()}`;
   }
