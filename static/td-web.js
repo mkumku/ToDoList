@@ -219,16 +219,30 @@ function resetCategorySelect(selectId, customInputId) {
   document.getElementById(customInputId).classList.add('hidden');
 }
 
+function refreshTodoCategoryFilter() {
+  let tasks = todoTasks;
+  if (todoFilter === 'work') tasks = tasks.filter(t => !isPersonal(t));
+  else if (todoFilter === 'personal') tasks = tasks.filter(t => isPersonal(t));
+  populateCategoryDropdown('todo-category-filter', tasks);
+}
+
+function refreshDoneCategoryFilter() {
+  let tasks = doneTasks;
+  if (doneTypeFilter === 'work') tasks = tasks.filter(t => !isPersonal(t));
+  else if (doneTypeFilter === 'personal') tasks = tasks.filter(t => isPersonal(t));
+  populateCategoryDropdown('done-category-filter', tasks);
+}
+
 async function loadTodo() {
   todoTasks = await api('/api/todo');
-  populateCategoryDropdown('todo-category-filter', todoTasks);
+  refreshTodoCategoryFilter();
   refreshAddCategoryDropdowns();
   renderTodo();
 }
 
 async function loadDone() {
   doneTasks = await api('/api/done');
-  populateCategoryDropdown('done-category-filter', doneTasks);
+  refreshDoneCategoryFilter();
   refreshAddCategoryDropdowns();
   renderDone();
 }
@@ -762,6 +776,11 @@ document.querySelectorAll('#todo-view .filters .filter-btn').forEach(btn => {
     document.querySelectorAll('#todo-view .filters .filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     todoFilter = btn.dataset.filter;
+    todoCategoryFilter = '';
+    const personalCheckbox = document.getElementById('new-todo-personal');
+    personalCheckbox.checked = todoFilter === 'personal';
+    populateAddCategoryDropdown('new-todo-category-select', 'new-todo-category-custom', personalCheckbox.checked);
+    refreshTodoCategoryFilter();
     renderTodo();
   });
 });
@@ -784,6 +803,8 @@ document.querySelectorAll('#done-view .toolbar').forEach(toolbar => {
             btn.classList.add('active');
             doneTypeFilter = btn.dataset.filter;
           }
+          doneCategoryFilter = '';
+          refreshDoneCategoryFilter();
         }
         renderDone();
       });

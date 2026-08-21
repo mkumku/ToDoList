@@ -32,6 +32,18 @@ pip install -r requirements.txt
 python3 td-web.py
 ```
 
+Or run it in the background (terminal stays free):
+
+```bash
+python3 td-web.py &
+```
+
+To restart it:
+
+```bash
+pkill -f td-web.py; sleep 1 && cd ~/ToDoList && python3 td-web.py &
+```
+
 Open http://localhost:5000 in your browser.
 
 ### 3. Use the CLI

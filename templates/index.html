@@ -18,19 +18,6 @@
     </header>
 
     <div id="todo-view" class="view active">
-      <div class="toolbar">
-        <div class="filters">
-          <button class="filter-btn active" data-filter="work">Work</button>
-          <button class="filter-btn" data-filter="personal">Personal</button>
-          <button class="filter-btn" data-filter="all">All</button>
-        </div>
-        <select class="category-select" id="todo-category-filter">
-          <option value="">All Categories</option>
-        </select>
-        <button class="btn btn-export" id="export-todo-btn">Export CSV</button>
-        <button class="btn btn-export" id="copy-todo-keep">Copy for Keep</button>
-      </div>
-
       <div id="add-todo-form" class="add-form">
         <div class="form-row">
           <label class="personal-label"><input type="checkbox" id="new-todo-personal"> Personal</label>
@@ -49,6 +36,19 @@
           <input type="text" id="new-todo-notes" placeholder="Notes">
           <button class="btn btn-save" id="save-todo-btn">Add Task</button>
         </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="filters">
+          <button class="filter-btn active" data-filter="work">Work</button>
+          <button class="filter-btn" data-filter="personal">Personal</button>
+          <button class="filter-btn" data-filter="all">All</button>
+        </div>
+        <select class="category-select" id="todo-category-filter">
+          <option value="">All Categories</option>
+        </select>
+        <button class="btn btn-export" id="export-todo-btn">Export CSV</button>
+        <button class="btn btn-export" id="copy-todo-keep">Copy for Keep</button>
       </div>
 
       <div id="bulk-actions" class="add-form hidden">
