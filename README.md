@@ -32,16 +32,33 @@ pip install -r requirements.txt
 python3 td-web.py
 ```
 
-Or run it in the background (terminal stays free):
+**Or set it up as a background service (auto-starts on login):**
 
 ```bash
-python3 td-web.py &
+mkdir -p ~/.config/systemd/user
+cat > ~/.config/systemd/user/td-web.service << 'EOF'
+[Unit]
+Description=ToDoList Web UI
+After=network.target
+
+[Service]
+WorkingDirectory=%h/ToDoList
+ExecStart=/usr/bin/python3 td-web.py
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+EOF
+systemctl --user daemon-reload
+systemctl --user enable --now td-web
 ```
 
-To restart it:
+Manage it with:
 
 ```bash
-pkill -f td-web.py; sleep 1 && cd ~/ToDoList && python3 td-web.py &
+systemctl --user status td-web    # check if running
+systemctl --user restart td-web   # restart after updates
+systemctl --user stop td-web      # stop it
 ```
 
 Open http://localhost:5000 in your browser.
